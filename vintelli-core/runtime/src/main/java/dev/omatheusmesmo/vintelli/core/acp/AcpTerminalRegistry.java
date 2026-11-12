@@ -123,7 +123,9 @@ public final class AcpTerminalRegistry {
     }
 
     public AcpSchema.KillTerminalCommandResponse kill(String terminalId) {
-        destroyProcessTree(find(terminalId).process);
+        Terminal terminal = find(terminalId);
+        destroyProcessTree(terminal.process);
+        terminal.awaitCapture();
         return new AcpSchema.KillTerminalCommandResponse();
     }
 
@@ -133,6 +135,7 @@ public final class AcpTerminalRegistry {
             throw new IllegalArgumentException("unknown terminal " + terminalId);
         }
         destroyProcessTree(terminal.process);
+        terminal.awaitCapture();
         return new AcpSchema.ReleaseTerminalResponse();
     }
 
@@ -160,14 +163,15 @@ public final class AcpTerminalRegistry {
     }
 
     private void destroyProcessTree(Process process) {
-        process.descendants().forEach(ProcessHandle::destroyForcibly);
+        List<ProcessHandle> descendants = process.descendants().toList();
+        descendants.forEach(ProcessHandle::destroyForcibly);
         process.destroyForcibly();
         try {
             process.waitFor(5, TimeUnit.SECONDS);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
         }
-        for (ProcessHandle descendant : process.descendants().toList()) {
+        for (ProcessHandle descendant : descendants) {
             try {
                 descendant.onExit().get(5, TimeUnit.SECONDS);
             } catch (Exception ignored) {
