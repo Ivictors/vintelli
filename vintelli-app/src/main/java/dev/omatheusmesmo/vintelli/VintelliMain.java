@@ -8,6 +8,7 @@ import dev.omatheusmesmo.vintelli.cli.VintelliCliCommands;
 import dev.omatheusmesmo.vintelli.cli.VintelliCliRepl;
 import dev.omatheusmesmo.vintelli.launch.RunMode;
 import dev.omatheusmesmo.vintelli.tui.ShellThemes;
+import dev.omatheusmesmo.vintelli.tui.UiWorkQueue;
 import dev.omatheusmesmo.vintelli.tui.VintelliShell;
 import dev.omatheusmesmo.vintelli.tui.keymap.Keymap;
 import dev.omatheusmesmo.vintelli.tui.keymap.KeymapRegistry;
@@ -28,6 +29,7 @@ public final class VintelliMain implements QuarkusApplication {
     private final Instance<ShellThemes> themes;
     private final VintelliCliCommands cliCommands;
     private final VintelliCliRepl cliRepl;
+    private final UiWorkQueue uiWorkQueue;
     private final boolean fileLogging;
     private final Optional<String> logFile;
     private final boolean terminalBackground;
@@ -35,6 +37,7 @@ public final class VintelliMain implements QuarkusApplication {
     @Inject
     VintelliMain(Instance<VintelliShell> shell, Instance<KeymapRegistry> keymapRegistry,
             Instance<ShellThemes> themes, VintelliCliCommands cliCommands, VintelliCliRepl cliRepl,
+            UiWorkQueue uiWorkQueue,
             @ConfigProperty(name = "quarkus.log.file.enabled", defaultValue = "false") boolean fileLogging,
             @ConfigProperty(name = "quarkus.log.file.path") Optional<String> logFile,
             @ConfigProperty(name = TerminalBackground.CONFIG_PROPERTY, defaultValue = "true") boolean terminalBackground) {
@@ -43,6 +46,7 @@ public final class VintelliMain implements QuarkusApplication {
         this.themes = themes;
         this.cliCommands = cliCommands;
         this.cliRepl = cliRepl;
+        this.uiWorkQueue = uiWorkQueue;
         this.fileLogging = fileLogging;
         this.logFile = logFile;
         this.terminalBackground = terminalBackground;
@@ -75,8 +79,10 @@ public final class VintelliMain implements QuarkusApplication {
                         .bindings(keymap.bindings())
                         .styleEngine(shellThemes.engine())
                         .mouseCapture(true)
+                        .noTick()
                         .faultTolerant(true)
                         .build()) {
+                    uiWorkQueue.wakeWith(() -> runner.runOnRenderThread(() -> { }));
                     runner.eventRouter().addGlobalHandler(tuiShell);
                     tuiShell.bindQuit(runner::quit);
                     try (TerminalBackground background = attachBackground(runner, shellThemes).orElse(null)) {
