@@ -176,7 +176,9 @@ final class EditorController {
 
     void returnToEditor() {
         navigationBarFocused = false;
-        editor.requestFocus();
+        if (editor != null) {
+            editor.requestFocus();
+        }
     }
 
     void previousNavigationSegment() {
@@ -263,6 +265,15 @@ final class EditorController {
             host.releaseCapture();
             openFile(Path.of(document.file()), line);
         });
+    }
+
+    void goToLine(GoToLineController.Position position) {
+        if (editor == null || !editor.goToPosition(position.line(), position.column())) {
+            host.status(editor == null ? "Built-in editor unavailable" : editor.status());
+            return;
+        }
+        host.status(editor.status());
+        editor.requestFocus();
     }
 
     void openDiagnostic(Diagnostic problem) {

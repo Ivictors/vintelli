@@ -64,6 +64,7 @@ final class ShellMenuCatalog {
         addMenu(entries, "View", KeyActions.TOGGLE_IMPORT_FOLD, "Fold or Unfold Imports", canEdit ? "" : editorUnavailable);
         String searchUnavailable = host.projectSearchAvailable() ? "" : "Project search unavailable";
         addMenu(entries, "Navigate", KeyActions.GO_TO_FILE, "Go to File", searchUnavailable);
+        addMenu(entries, "Navigate", KeyActions.GO_TO_LINE, "Go to Line", canEdit ? "" : editorUnavailable);
         addMenu(entries, "Navigate", KeyActions.FIND_IN_FILES, "Find in Files", searchUnavailable);
         String navigationUnavailable = host.navigationUnavailableReason();
         addMenu(entries, "Navigate", KeyActions.DEFINITION, "Go to Definition",

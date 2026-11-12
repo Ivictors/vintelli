@@ -164,6 +164,18 @@ public final class BuiltinEditor implements EditorBridge, ToolWindow {
     synchronized boolean menuNavigationActive() { return menuNavigationActive; }
     public synchronized Path project() { return project; }
     public synchronized String status() { return status; }
+
+    /** Moves the active caret to a document position without reopening the file. */
+    public synchronized boolean goToPosition(int line, int column) {
+        EditorDocument document = document();
+        if (document == null) {
+            status = "Open a project file first";
+            return false;
+        }
+        document.position(line, column);
+        status = "Caret: " + (document.row() + 1) + ":" + (document.column() + 1);
+        return true;
+    }
     synchronized ShellEditorPalette palette() { return palette.get(); }
     synchronized String consumeFocusRequest() {
         String requested = focusRequest;

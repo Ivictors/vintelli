@@ -50,6 +50,21 @@ class BuiltinEditorTest {
     }
 
     @Test
+    void goToPositionMovesTheCaretAndClampsPastTheDocumentEnd() throws IOException {
+        BuiltinEditor editor = editor(null);
+        editor.open(new OpenRequest(write("Rows.java", "first line\nsecond line\n"), 0));
+
+        assertTrue(editor.goToPosition(1, 3));
+        assertEquals(1, editor.document().row());
+        assertEquals(3, editor.document().column());
+        assertEquals("Caret: 2:4", editor.status());
+
+        assertTrue(editor.goToPosition(99, 99));
+        assertEquals(1, editor.document().row());
+        assertEquals(11, editor.document().column());
+    }
+
+    @Test
     void constructingTheEditorDoesNotResolveTheTuiIconMapping() {
         String previous = System.getProperty("vintelli.icons.file");
         System.setProperty("vintelli.icons.file", project.resolve("missing-icons.properties").toString());

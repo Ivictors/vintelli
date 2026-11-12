@@ -133,7 +133,7 @@ public final class VintelliShell implements GlobalEventHandler, ShellHighlightPo
      */
     private record KeymapParts(Keymap keymap, CommandPalette commandPalette, KeymapHelpOverlay keymapHelp,
             MenuPopup menuPopup, ProjectSearchModel searchModel, ProjectSearchOverlay searchOverlay,
-            OverlayStack stack, RunConfigurationChooser runConfigurations) {
+            GoToLineOverlay goToLine, OverlayStack stack, RunConfigurationChooser runConfigurations) {
     }
 
     private final ShellThemes themes;
@@ -330,11 +330,12 @@ public final class VintelliShell implements GlobalEventHandler, ShellHighlightPo
         MenuPopup menuPopup = new MenuPopup(MENUS, menuCatalog::entries, keymap::describeBindings,
                 MainToolbar.MENU_ORIGIN);
         ProjectSearchOverlay searchOverlay = searchModel == null ? null : new ProjectSearchOverlay(searchModel);
+        GoToLineOverlay goToLine = new GoToLineOverlay();
         OverlayStack stack = new OverlayStack();
         RunConfigurationChooser runConfigurations = new RunConfigurationChooser(
                 () -> runWindow == null ? List.of() : runWindow.configurations());
         KeymapParts built = new KeymapParts(keymap, commandPalette, keymapHelp, menuPopup, searchModel,
-                searchOverlay, stack, runConfigurations);
+                searchOverlay, goToLine, stack, runConfigurations);
         stack.registerOverlay(Kind.COMMAND_PALETTE, commandPalette::isOpen, commandPalette::close);
         stack.registerOverlay(Kind.KEYMAP_HELP, keymapHelp::isOpen, keymapHelp::close);
         stack.registerOverlay(Kind.MENU, menuPopup::isOpen, () -> closeMenu(built));
@@ -342,6 +343,7 @@ public final class VintelliShell implements GlobalEventHandler, ShellHighlightPo
         if (searchModel != null) {
             stack.registerOverlay(Kind.PROJECT_SEARCH, searchModel::isOpen, searchModel::close);
         }
+        stack.registerOverlay(Kind.GO_TO_LINE, goToLine::isOpen, goToLine::close);
         stack.registerPrompt(Kind.PROJECT_DELETE, projects::deletePending);
         if (editor != null) {
             stack.registerPrompt(Kind.EDITOR_CLOSE, editor::closeConfirmationPending);
@@ -1011,6 +1013,7 @@ public final class VintelliShell implements GlobalEventHandler, ShellHighlightPo
             case RUN_CONFIGURATION -> new OverlayElement(RunConfigurationChooser.ID,
                     (frame, area) -> parts.runConfigurations().render(frame, area, mainToolbar.configurationColumn()));
             case PROJECT_SEARCH -> new OverlayElement("project-search", parts.searchOverlay()::render);
+            case GO_TO_LINE -> new OverlayElement("go-to-line", parts.goToLine()::render);
             default -> throw new IllegalStateException("Not a drawn overlay: " + kind);
         };
     }
@@ -1200,6 +1203,12 @@ public final class VintelliShell implements GlobalEventHandler, ShellHighlightPo
                     .ifPresent(identifier -> selectRunConfiguration(parts, identifier));
             case PROJECT_SEARCH -> parts.searchOverlay().handleKey(key)
                     .ifPresent(target -> editorController.openRevealed(target.file(), target.line()));
+            case GO_TO_LINE -> {
+                parts.goToLine().handleKey(key).ifPresent(editorController::goToLine);
+                if (key.isKey(KeyCode.ESCAPE)) {
+                    editorController.returnToEditor();
+                }
+            }
             default -> throw new IllegalStateException("Not a drawn overlay: " + overlay);
         }
     }
@@ -1437,6 +1446,11 @@ public final class VintelliShell implements GlobalEventHandler, ShellHighlightPo
             case KeyActions.GO_TO_FILE -> {
                 parts.stack().closeOverlays();
                 openSearch(parts, ProjectSearchModel.Mode.FILES);
+            }
+            case KeyActions.GO_TO_LINE -> {
+                parts.stack().open(Kind.GO_TO_LINE, parts.goToLine()::open);
+                inputCaptured = false;
+                status = "Go to Line: enter line or line:column";
             }
             case KeyActions.PROJECT_WIDER -> {
                 parts.stack().closeOverlays();
