@@ -42,12 +42,12 @@ class EditorStartScreenTest {
     @Test
     void aChangedBindingShowsTheUserChordInsteadOfTheProfileChord(@TempDir Path tempDir) throws Exception {
         Path userFile = tempDir.resolve("keymap.properties");
-        Files.writeString(userFile, "navigation_goToFile = Ctrl+g\n");
+        Files.writeString(userFile, "navigation_goToFile = F11\n");
         Keymap keymap = Keymap.load(KeymapProfile.DEFAULT, List.of(), userFile);
 
         List<EditorStartScreen.Shortcut> shortcuts = EditorStartScreen.shortcuts(keymap);
 
-        assertTrue(shortcuts.contains(new EditorStartScreen.Shortcut("Go to File", "Ctrl+g")),
+        assertTrue(shortcuts.contains(new EditorStartScreen.Shortcut("Go to File", "F11")),
                 shortcuts.toString());
         assertFalse(shortcuts.contains(new EditorStartScreen.Shortcut("Go to File", "Ctrl+o")),
                 "the profile chord must not survive a user binding");
@@ -92,7 +92,7 @@ class EditorStartScreenTest {
     @Test
     void theShellShowsTheStartScreenWhileNoFileIsOpen(@TempDir Path tempDir) throws Exception {
         Path userFile = tempDir.resolve("keymap.properties");
-        Files.writeString(userFile, "navigation_goToFile = Ctrl+g\n");
+        Files.writeString(userFile, "navigation_goToFile = F11\n");
         Keymap keymap = Keymap.load(KeymapProfile.DEFAULT, List.of(), userFile);
         VintelliShell shell = new VintelliShell(ShellConfig.of(List.of(), new ShellState(), themes())
                 .withKeymapSupplier(() -> keymap));
@@ -101,7 +101,7 @@ class EditorStartScreenTest {
         String frame = text(buffer);
 
         assertTrue(frame.contains("Go to File"), frame);
-        assertTrue(frame.contains("Ctrl+g"), frame);
+        assertTrue(frame.contains("F11"), frame);
         assertFalse(frame.contains("Ctrl+o"), frame);
         assertFalse(ISSUE_NUMBER.matcher(frame).find(), frame);
         assertFalse(frame.contains("lands with"), frame);
